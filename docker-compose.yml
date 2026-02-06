@@ -1,4 +1,3 @@
-version: '3.7'
 services:
   cost_care_service_commands:
     build:

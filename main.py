@@ -9,26 +9,52 @@ from langchain_core.messages import AIMessage, HumanMessage
 
 from agent.graph import create_agent_graph
 from agent.state import create_initial_state
-from agent.state_manager import (
-    create_backup_state,
-    is_recoverable_error,
-    log_state_summary,
-    restore_from_backup,
-    sanitize_state,
-    suggest_recovery_strategy,
-    validate_state,
-)
 
 # Load environment variables
 load_dotenv()
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+
+# Determine log level from environment or default to INFO
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=getattr(logging, log_level, logging.INFO),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 logger = logging.getLogger(__name__)
 
-# Suppress verbose logging from some libraries
+# Configure LangChain/LangGraph specific loggers
+langchain_log_level = os.getenv("LANGCHAIN_DEBUG", "false").lower() == "true"
+if langchain_log_level:
+    # Very verbose logging for debugging LangChain internals
+    logging.getLogger("langchain").setLevel(logging.DEBUG)
+    logging.getLogger("langgraph").setLevel(logging.DEBUG)
+    logger.info("🔍 LangChain DEBUG mode enabled")
+else:
+    # Standard logging for LangChain components
+    logging.getLogger("langchain").setLevel(logging.INFO)
+    logging.getLogger("langgraph").setLevel(logging.INFO)
+
+# Configure callback logger for custom logging handlers
+logging.getLogger("langchain.callbacks").setLevel(logging.INFO)
+
+# Suppress verbose logging from some external libraries
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("chromadb").setLevel(logging.WARNING)
+logging.getLogger("google.auth").setLevel(logging.WARNING)
+logging.getLogger("googleapiclient").setLevel(logging.WARNING)
+
+# Log LangSmith tracing status
+if os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true":
+    project_name = os.getenv("LANGCHAIN_PROJECT", "default")
+    logger.info(f"📊 LangSmith tracing enabled for project: {project_name}")
+    if not os.getenv("LANGCHAIN_API_KEY"):
+        logger.warning("⚠️  LANGCHAIN_API_KEY not set - tracing may not work properly")
+else:
+    logger.info("ℹ️  LangSmith tracing disabled (set LANGCHAIN_TRACING_V2=true to enable)")
 
 
 def print_banner():

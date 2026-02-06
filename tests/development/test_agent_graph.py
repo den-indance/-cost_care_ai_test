@@ -7,7 +7,7 @@ def test_create_agent_graph():
     print("🧪 Testing graph creation...")
 
     try:
-        app = create_agent_graph()
+        create_agent_graph()
         print("✅ Graph created successfully!")
         print("\nGraph structure:")
         print("- Entry: router")

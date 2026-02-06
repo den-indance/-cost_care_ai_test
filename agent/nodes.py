@@ -10,6 +10,7 @@ from pathlib import Path
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+from agent.callbacks import get_logging_callbacks
 from agent.state import AgentState
 from tools.calendar_service import BookingData, BookingSlot, GoogleCalendarService
 from tools.rag_service import RAGService
@@ -21,11 +22,14 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 # Initialize LLM (Gemini)
+# Enable verbose logging and custom callbacks for observability
 llm = ChatGoogleGenerativeAI(
     model="models/gemini-2.0-flash-lite",
     google_api_key=os.getenv("GOOGLE_API_KEY"),
     temperature=0.3,
     convert_system_message_to_human=True,  # Gemini compatibility
+    verbose=True,  # Enable verbose logging for LangChain/LangSmith integration
+    callbacks=get_logging_callbacks(log_level=logging.INFO),  # Custom logging callbacks
 )
 
 # Initialize services
@@ -269,7 +273,10 @@ Provide a helpful, accurate answer based on the context above:"""
 
     except Exception as e:
         logger.error(f"❌ Error in RAG node: {e}")
-        error_msg = "I apologize, but I'm having trouble accessing the information right now. Would you like to book a meeting with our team instead?"
+        error_msg = (
+            "I apologize, but I'm having trouble accessing the information right now. "
+            "Would you like to book a meeting with our team instead?"
+        )
         state["messages"].append(AIMessage(content=error_msg))
 
     state["stage"] = "done"
@@ -377,7 +384,7 @@ def parse_user_info_node(state: AgentState) -> AgentState:
 
     context_hint = ""
     if context_parts:
-        context_hint = f"\n\nBooking context:\n" + "\n".join(context_parts)
+        context_hint = "\n\nBooking context:\n" + "\n".join(context_parts)
 
     # Determine what we're likely asking for based on what's missing
     missing_hint = ""
@@ -389,16 +396,16 @@ def parse_user_info_node(state: AgentState) -> AgentState:
         missing_hint = "\nIMPORTANT: The user is likely providing their PREFERRED DATE/TIME."
 
     # Use LLM to extract structured data with better context
-    extraction_prompt = f"""You are extracting booking information from a user message. We are in the middle of a booking conversation.{missing_hint}{context_hint}
-
-User message: "{last_user_message}"
-
-Return ONLY a valid JSON object with these exact fields:
-{{
+    extraction_prompt = (
+        "You are extracting booking information from a user message. "
+        f"We are in the middle of a booking conversation.{missing_hint}{context_hint}\n"
+        f'\nUser message: "{last_user_message}"\n\n'
+        """Return ONLY a valid JSON object with these exact fields:
+{
   "name": "user's name (first name is fine, can be short like 'John', 'Denis', 'Dni', etc.) or null",
   "email": "user's email address (must contain @) or null",
   "preferred_date": "date preference like 'tomorrow afternoon', 'next week', etc. or null"
-}}
+}
 
 Rules:
 - If the message looks like a name (even a short one), extract it as name
@@ -406,6 +413,7 @@ Rules:
 - If the message contains time/day words (tomorrow, next week, etc.), it's a date preference
 
 Return ONLY the JSON, no other text:"""
+    )
 
     try:
         response = llm.invoke([HumanMessage(content=extraction_prompt)])
@@ -516,7 +524,10 @@ Be helpful and friendly:"""
             logger.error(f"Error: {e}")
             state["messages"].append(
                 AIMessage(
-                    content=f"I don't see any available slots for {preferred_date}. Would you like to try a different day?"
+                    content=(
+                        f"I don't see any available slots for {preferred_date}. "
+                        "Would you like to try a different day?"
+                    )
                 )
             )
 
@@ -541,7 +552,10 @@ Present these options in a friendly way and ask them to choose by number (1, 2, 
             logger.info("✅ Slots proposed to user")
         except Exception as e:
             logger.error(f"Error: {e}")
-            fallback = f"Great! I found these available times:\n\n{slots_text}\n\nWhich one works best for you? Just tell me the number."
+            fallback = (
+                f"Great! I found these available times:\n\n{slots_text}\n\n"
+                "Which one works best for you? Just tell me the number."
+            )
             state["messages"].append(AIMessage(content=fallback))
 
         # Move to confirmation stage
@@ -642,7 +656,10 @@ Should I go ahead and book this meeting? (Yes/No)"""
             # Unclear response
             state["messages"].append(
                 AIMessage(
-                    content="I didn't quite catch that. Should I book this meeting? Please say 'yes' to confirm or 'no' to choose a different time."
+                    content=(
+                        "I didn't quite catch that. Should I book this meeting? "
+                        "Please say 'yes' to confirm or 'no' to choose a different time."
+                    )
                 )
             )
 
