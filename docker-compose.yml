@@ -1,0 +1,17 @@
+version: '3.7'
+services:
+  cost_care_service_commands:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cost_care_ai_test:latest
+    env_file: .env
+    restart: always
+    stdin_open: true
+    volumes:
+      - ./:/opt/app
+
+networks:
+  default:
+    name: cost_care_ai_test
+    external: True
