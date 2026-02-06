@@ -66,4 +66,8 @@ If you are running this on other operating systems (such as macOS or Windows/WSL
 *how to start local development:*
 
     1) create docker network: docker network create cost_care_ai_test
-    2) create at google console proejct and add google_creds.json file at the condif dir
+    2) create proejct at the google console and add google_creds.json file at the config dir
+
+
+*added https://smith.langchain.com for the project llm observability*
+![smith.png](data%2Fsmith.png)
