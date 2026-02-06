@@ -1,48 +1,39 @@
-+---------------------------------------------------------------+
-|                   USER (CLI Interface)                        |
-+-------------------------------+-------------------------------+
-                                |
-                                v
-+---------------------------------------------------------------+
-|              LangGraph Agent (State Machine)                  |
-|                                                               |
-|  +--------------------------------------------------------+   |
-|  |  Router Node                                           |   |
-|  |  (Intent Classification: RAG vs Booking)              |   |
-|  +------------+-------------------------+-----------------+   |
-|               |                         |                     |
-|               v                         v                     |
-|  +----------------------+  +-------------------------------+  |
-|  |   RAG Path           |  |   Booking Path                |  |
-|  |   (Q&A Flow)         |  |   (FSM: 6 nodes)              |  |
-|  |                      |  |                               |  |
-|  |  1. rag_qa_node      |  |  1. qualification_node        |  |
-|  |     - Search KB      |  |  2. parse_user_info_node      |  |
-|  |     - LLM answer     |  |  3. slot_proposal_node        |  |
-|  |     - Done           |  |  4. confirmation_node         |  |
-|  |                      |  |  5. booking_node              |  |
-|  +----------------------+  +-------------------------------+  |
-|                                                               |
-+---------------------------------------------------------------+
-                                |
-        +-----------------------+-----------------------+
-        |                       |                       |
-        v                       v                       v
-+---------------+       +---------------+       +------------------+
-| RAG Service   |       |  LLM (Gemini) |       | Calendar Service |
-|               |       |               |       |                  |
-| - Vector DB   |       | - Text Gen    |       | - OAuth 2.0      |
-| - Embeddings  |       | - Extraction  |       | - Freebusy API   |
-| - Search      |       | - Reasoning   |       | - Events API     |
-+-------+-------+       +---------------+       +--------+---------+
-        |                                                |
-        v                                                v
-+---------------+                              +-------------------+
-|  Chroma DB    |                              | Google Calendar   |
-|  (Local)      |                              | API               |
-+---------------+                              +-------------------+
-
-
+```
++-------------------------------------------------------+
+|                 USER (CLI / Frontend)                 |
++--------------------------+----------------------------+
+                           |
+                           v
++-------------------------------------------------------+
+|            LANGGRAPH AGENT (State Machine)            |
+|                                                       |
+|  +-------------------------------------------------+  |
+|  |                  ROUTER NODE                    |  |
+|  |      (Intent: Q&A Path vs. Booking Path)        |  |
+|  +------------+-------------------------+----------+  |
+|               |                         |             |
+|        [ RAG FLOW ]              [ BOOKING FSM ]      |
+|               v                         v             |
+|  +-----------------------+   +---------------------+  |
+|  |     rag_qa_node       |   | 1. qualification    |  |
+|  |   - Vector Search     |   | 2. parse_user_info  |  |
+|  |   - LLM Answer        |   | 3. slot_proposal    |  |
+|  |                       |   | 4. confirmation     |  |
+|  |         DONE          |   | 5. booking_node     |  |
+|  +-----------------------+   +---------------------+  |
+|                                                       |
++-------+------------------+--------------------+-------+
+        |                  |                    |
+        v                  v                    v
++---------------+  +---------------+  +-----------------+
+|  RAG SERVICE  |  |  LLM SERVICE  |  |  CALENDAR API   |
+| (ChromaDB API)|  |   (Gemini)    |  | (Google OAuth)  |
++-------+-------+  +-------+-------+  +--------+--------+
+        |                  |                   |
+        v                  v                   v
+ [Local Vector DB]  [Reasoning/JSON]    [Google Calendar]
++-------------------------------------------------------+
+```
 
 🛠 Development Commands
 
@@ -69,3 +60,10 @@ Use the following make commands to manage the project environment:
 The current Makefile and Docker image are specifically tailored for Linux (Ubuntu) environments.
 
 If you are running this on other operating systems (such as macOS or Windows/WSL), you may need to manually adjust the configuration files to ensure proper volume mounting and performance.
+
+
+
+*how to start local development:*
+
+    1) create docker network: docker network create cost_care_ai_test
+    2) create at google console proejct and add google_creds.json file at the condif dir

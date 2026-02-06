@@ -1,6 +1,8 @@
 import logging
+import re
 from typing import Literal
 
+from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import END, StateGraph
 
 from agent.nodes import (
@@ -37,12 +39,8 @@ def _check_parse_needed_node(state: AgentState) -> AgentState:
         # CRITICAL FIX: Check only USER messages, not AI messages
         # This prevents triggering on the AI's own slot proposal message
         if state["messages"]:
-            from langchain_core.messages import HumanMessage
-
             user_messages = [m for m in state["messages"] if isinstance(m, HumanMessage)]
             if user_messages:
-                import re
-
                 last_user_message = user_messages[-1].content.lower()
                 # Check if user's message contains a number (likely slot selection)
                 if re.search(r"\b\d+\b", last_user_message):
@@ -54,8 +52,6 @@ def _check_parse_needed_node(state: AgentState) -> AgentState:
     # Check if the last message was from AI
     if state["messages"]:
         last_message = state["messages"][-1]
-        from langchain_core.messages import AIMessage
-
         if isinstance(last_message, AIMessage):
             state["skip_parse"] = True
             logger.info("ℹ️  Last message was AI question → skip parsing")
@@ -169,8 +165,6 @@ def route_after_confirmation(state: AgentState) -> Literal["booking", "slot_prop
     # CRITICAL FIX: Check if the last message is from a human
     # If not, no new user input - return to END to wait for input instead of looping
     if state.get("messages"):
-        from langchain_core.messages import HumanMessage
-
         user_messages = [m for m in state["messages"] if isinstance(m, HumanMessage)]
         if not user_messages:
             # No user messages at all, wait for input

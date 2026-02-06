@@ -14,7 +14,7 @@ from typing import Any, Optional
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
-from agent.state import AgentState
+from agent.state import AgentState, create_initial_state
 
 logger = logging.getLogger(__name__)
 
@@ -123,8 +123,7 @@ def restore_from_backup(state: AgentState, backup: dict, strategy: str = "preser
 
             if current_messages:
                 logger.info(
-                    f"📬 Preserving {len(current_messages)} current messages, "
-                    f"restoring booking data from backup"
+                    f"📬 Preserving {len(current_messages)} current messages, " f"restoring booking data from backup"
                 )
                 # Restore everything except messages
                 for key, value in backup_data.items():
@@ -296,10 +295,7 @@ def validate_state(state: AgentState) -> tuple[bool, list[str]]:
     for field, expected_type in type_checks:
         if field in state and state[field] is not None:
             if not isinstance(state[field], expected_type):
-                errors.append(
-                    f"Field '{field}' has wrong type: "
-                    f"expected {expected_type}, got {type(state[field])}"
-                )
+                errors.append(f"Field '{field}' has wrong type: " f"expected {expected_type}, got {type(state[field])}")
 
     # Check 6: Booking data consistency
     if state.get("ready_to_book"):
@@ -354,8 +350,6 @@ def sanitize_state(state: AgentState) -> AgentState:
         >>> state = sanitize_state(corrupted_state)
     """
     logger.info("🧹 Sanitizing state...")
-
-    from agent.state import create_initial_state
 
     # Get a clean initial state as fallback for missing fields
     clean_state = create_initial_state()
@@ -467,11 +461,13 @@ def capture_state_snapshot(state: AgentState, include_messages: bool = True) -> 
         for i, msg in enumerate(state["messages"]):
             msg_type = "Human" if isinstance(msg, HumanMessage) else "AI" if isinstance(msg, AIMessage) else "Other"
             content_preview = msg.content[:50] if hasattr(msg, "content") else "[no content]"
-            message_summary.append({
-                "index": i,
-                "type": msg_type,
-                "preview": content_preview,
-            })
+            message_summary.append(
+                {
+                    "index": i,
+                    "type": msg_type,
+                    "preview": content_preview,
+                }
+            )
         snapshot["messages_summary"] = message_summary
 
     return snapshot

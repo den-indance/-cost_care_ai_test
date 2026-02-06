@@ -1,5 +1,7 @@
 import os
 
+from google import genai
+
 from tools.rag_service import RAGService
 
 
@@ -11,8 +13,6 @@ def test_rag_service():
         return
 
     print("🧪 Testing RAG Service...\n")
-
-    from google import genai
 
     # Инициализируем клиента (вместо genai.configure)
     client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
